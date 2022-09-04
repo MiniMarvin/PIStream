@@ -74,9 +74,6 @@ def streamPiAfterPrimes(searchSet):
   for chunk in r.iter_content(1000):
     print('trying indexes', begin, ',', begin + 1000 - 1)
     begin += 1000
-    # for i in range(10):
-    #   print(chr(chunk[i]))
-    # break
     found, pattern = iterativeCompare(pattern, chunk, searchSet)
     if found:
       print("found the first polinomial prime number:")
