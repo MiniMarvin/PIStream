@@ -1,11 +1,54 @@
 import requests
 import sys
 import time
-# 110001000
+import threading
+
 SUBSTRING_SIZE = 21
 BATCH_SIZE = 1000
-START_INDEX = 18712000
+START_INDEX = 984613000
 END_INDEX = -1
+BUFFER_SIZE = 50
+NAME = 'main'
+
+keepAlive = True
+digitBuffer = []
+class ThreadWithReturnValue(threading.Thread):
+    def __init__(self, group=None, target=None, name=None,
+                 args=(), kwargs={}, Verbose=None):
+        threading.Thread.__init__(self, group, target, name, args, kwargs)
+        self._return = None
+    def run(self):
+        # print(type(self._target))
+        if self._target is not None:
+            self._return = self._target(*self._args,
+                                                **self._kwargs)
+    def join(self, *args):
+        threading.Thread.join(self, *args)
+        return self._return
+
+def startThreads():
+  digitsThread = threading.Thread(target=bufferizeDigits)
+  digitsThread.start()
+  return [digitsThread]
+
+def bufferizeDigits():
+  global digitBuffer
+  global keepAlive
+  digitIndex = START_INDEX
+  while keepAlive:
+    if len(digitBuffer) < BUFFER_SIZE:
+      threads = []
+      for i in range(BUFFER_SIZE - len(digitBuffer)):
+        t = ThreadWithReturnValue(target=lambda : getPiDigits(digitIndex, BATCH_SIZE))
+        t.start()
+        threads.append(t)
+        digitIndex += BATCH_SIZE
+      
+      for t in  threads:
+        piDigits = t.join()
+        digitBuffer.append(piDigits)
+      
+      threads = []
 
 def getParam(paramName):
   params = sys.argv
@@ -168,17 +211,29 @@ def iterativeCompare(initPattern, text):
   return False, pattern
 
 def streamPiAfterPrimes():
+  global digitBuffer
+  global keepAlive
   begin = START_INDEX
   sz = BATCH_SIZE
   pattern = ""
   while True:
+    with open('./parsed_index_' + NAME + '.txt', 'w')as f:
+      f.flush()
+      f.write('last index: ' + str(max(0, begin - sz)))
     if END_INDEX > 0 and begin > END_INDEX:
+      keepAlive = False
       print('No value found until limit', END_INDEX)
       break
+    
+    print('verifying buffer for indexes', begin, ',', begin + sz - 1)
+    while len(digitBuffer) == 0:
+      pass
     print('trying indexes', begin, ',', begin + sz - 1)
-    chunk = getPiDigits(begin, sz)
+    chunk = digitBuffer.pop(0)
+
     found, pattern = iterativeCompare(pattern, chunk)
     if found:
+      keepAlive = False
       print("found the first polinomial prime number:")
       print(pattern)
       break
@@ -188,6 +243,7 @@ def streamPiAfterPrimes():
 
 if __name__ == "__main__":
   handleParams()
+  threads = startThreads()
   streamPiAfterPrimes()
   pass
 
