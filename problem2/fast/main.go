@@ -12,8 +12,8 @@ import (
 	"strconv"
 )
 
-const HIGH_LIMIT uint64 = 100000000000 // 100Bi
-const START_INDEX uint64 = 0
+const HIGH_LIMIT uint64 = 200000000000 // 100Bi
+const START_INDEX uint64 = 100000000000
 const STEP uint64 = 1000
 const SEQUENCE_LEN uint64 = 21
 const POOL_LIMIT uint64 = 10000
@@ -201,12 +201,12 @@ func keepDispatching(
 				logEndChan <- finishedIdx
 				last = nextStep(last)
 				logStartChan <- last
-				// fmt.Println(fmt.Sprintf("[keepDispatching][%d][%d] starting next query", finishedIdx, last))
+				fmt.Println(fmt.Sprintf("[keepDispatching][%d][%d] starting next query", finishedIdx, last))
 				go searchInIdx(last, STEP, successChan, failureChan)
 			}
 		case failedIdx := <-failureChan:
 			{
-				// fmt.Println(fmt.Sprintf("[keepDispatching][%d] received failure idx", failedIdx))
+				fmt.Println(fmt.Sprintf("[keepDispatching][%d] received failure idx", failedIdx))
 				go searchInIdx(failedIdx, STEP, successChan, failureChan)
 			}
 		}
